@@ -1,0 +1,1 @@
+// This file is not used. Vite uses src/main.tsx as the entry point.
