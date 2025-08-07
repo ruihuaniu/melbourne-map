@@ -223,9 +223,9 @@ const MelbourneSuburbsMap = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
-      <div className="max-w-7xl mx-auto h-full">
-        <div className="bg-white sm:rounded-xl shadow-lg h-full flex flex-col">
+    <div className="w-full h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="w-full h-full">
+        <div className="bg-white shadow-lg h-full flex flex-col">
           <div className="p-6 border-b border-gray-200">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
               Melbourne Suburbs Interactive Map
