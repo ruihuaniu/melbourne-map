@@ -110,6 +110,25 @@ const MelbourneSuburbsMap = () => {
         }
       }
 
+
+      // if (!geojson) {
+      //   // Fetch from API if not cached
+      //   const response = await fetch(
+      //     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(suburb.name + ', Melbourne, Victoria, Australia')}&polygon_geojson=1&limit=1`
+      //   );
+      //   const data = await response.json();
+      //   if (data.length > 0 && data[0].geojson) {
+      //     geojson = data[0].geojson;
+      //     // Save to cache
+      //     try {
+      //       localStorage.setItem(cacheKey, JSON.stringify(geojson));
+      //     } catch (e) {
+      //       // Ignore cache errors
+      //     }
+      //   }
+      // }
+
+
       // Create either a boundary layer or a circle marker
       let layer: any;
       if (geojson) {
@@ -228,7 +247,7 @@ const MelbourneSuburbsMap = () => {
         <div className="bg-white shadow-lg h-full flex flex-col">
           <div className="p-6 border-b border-gray-200">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-              Melbourne Suburbs Interactive Map
+              Melbourne Suburbs Map
             </h1>
 
             {loading && (
@@ -334,9 +353,15 @@ const MelbourneSuburbsMap = () => {
             </div>
             )}
           </div>
-          <div className="p-4 border-t border-gray-200 text-center text-xs text-gray-500">
-            <p>Real suburb boundaries from OpenStreetMap • Population data from ABS 2023-24 estimates</p>
+          <div className="flex flex-col sm:flex-row justify-center items-center border-t border-gray-200 p-4 ">
+          <div className="text-center sm:text-left text-sm text-gray-600">
+            <p>Powered by <a href="mailto:ruihua.niu@outlook.com" className="underline">Ruihua Niu</a> with ❤️</p>
           </div>
+          {/* <div className="text-center sm:text-right text-xs text-gray-500">
+            <p>Real suburb boundaries from OpenStreetMap<br className="block sm:hidden" /> • <br className="hidden sm:block" />Population data from ABS 2023-24 estimates</p>
+          </div> */}
+        </div>
+         
         </div>
       </div>
     </div>
