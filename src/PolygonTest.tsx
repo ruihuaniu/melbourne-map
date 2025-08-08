@@ -4,8 +4,8 @@ import { suburbGeoJsonMap } from './geoData';
 
 export const PolygonTest: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const layerRef = useRef<L.Layer | null>(null);
+  const mapRef = useRef(null);
+  const layerRef = useRef(null);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
