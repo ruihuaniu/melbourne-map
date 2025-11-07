@@ -19,7 +19,7 @@ declare global {
   }
 }
 
-const GEOJSON_CACHE_VERSION = "v1";
+const GEOJSON_CACHE_VERSION = "v2";
 const GEOJSON_CACHE_PREFIX = "melb_suburb_geojson_";
 
 const getCacheKey = (suburbName: string) =>
