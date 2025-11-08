@@ -19,8 +19,9 @@ declare global {
   }
 }
 
+const GEOJSON_CACHE_CONTAINER_KEY = "melbourne_suburbs_geojson"; // single localStorage key
+const GEOJSON_CACHE_PREFIX = "melb_suburb_geojson_"; // matches keys in src/geoData.ts
 const GEOJSON_CACHE_VERSION = "v2";
-const GEOJSON_CACHE_PREFIX = "melb_suburb_geojson_";
 
 const getCacheKey = (suburbName: string) =>
   `${GEOJSON_CACHE_PREFIX}${GEOJSON_CACHE_VERSION}_${suburbName}`;
@@ -99,25 +100,36 @@ const MelbourneSuburbsMap = () => {
       // First check if we have cached geo data
       let geojson: any = null;
       try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          geojson = JSON.parse(cached);
+        const cachedData = localStorage.getItem(GEOJSON_CACHE_CONTAINER_KEY);
+        if (cachedData) {
+          const allSuburbsData = JSON.parse(cachedData);
+          if (allSuburbsData[cacheKey]) {
+            geojson = JSON.parse(allSuburbsData[cacheKey]);
+          }
         }
       } catch (e) {
-        // Ignore cache errors
+        console.warn("Cache read error:", e);
       }
 
       // If not in localStorage, check suburbGeoJsonMap
-      if (
-        !geojson &&
-        suburbGeoJsonMap[cacheKey] &&
-        Object.keys(suburbGeoJsonMap[cacheKey]).length > 0
-      ) {
-        geojson = JSON.parse(suburbGeoJsonMap[cacheKey]);
+      if (!geojson && suburbGeoJsonMap[cacheKey]) {
         try {
-          localStorage.setItem(cacheKey, JSON.stringify(geojson));
+          geojson = JSON.parse(suburbGeoJsonMap[cacheKey]);
+          // Cache the parsed data
+          try {
+            const cachedData =
+              localStorage.getItem(GEOJSON_CACHE_CONTAINER_KEY) || "{}";
+            const allSuburbsData = JSON.parse(cachedData);
+            allSuburbsData[cacheKey] = JSON.stringify(geojson);
+            localStorage.setItem(
+              GEOJSON_CACHE_CONTAINER_KEY,
+              JSON.stringify(allSuburbsData)
+            );
+          } catch (e) {
+            console.warn("Cache write error:", e);
+          }
         } catch (e) {
-          // Ignore cache errors
+          console.warn("GeoJSON parse error:", e);
         }
       }
 
@@ -194,9 +206,19 @@ const MelbourneSuburbsMap = () => {
                 geojson = boundaryGeoJson;
                 // Save to cache
                 try {
-                  localStorage.setItem(cacheKey, JSON.stringify(geojson));
+                  const cachedData =
+                    localStorage.getItem(GEOJSON_CACHE_CONTAINER_KEY) || "{}";
+                  const allSuburbsData = JSON.parse(cachedData);
+                  // Ensure we're storing valid GeoJSON
+                  if (typeof geojson === "object") {
+                    allSuburbsData[cacheKey] = JSON.stringify(geojson);
+                    localStorage.setItem(
+                      GEOJSON_CACHE_CONTAINER_KEY,
+                      JSON.stringify(allSuburbsData)
+                    );
+                  }
                 } catch (e) {
-                  // Ignore cache errors
+                  console.warn("Failed to cache boundary data:", e);
                 }
 
                 // Remove existing layer and create new boundary layer
@@ -239,6 +261,12 @@ const MelbourneSuburbsMap = () => {
       // Add the layer to the map
       layer.addTo(leafletMapRef.current);
       suburbLayersRef.current[suburb.name] = layer;
+
+      // Debug: log which suburbs were added and whether we used geojson
+      try {
+        // eslint-disable-next-line no-console
+        console.debug(`Added layer for ${suburb.name} (geojson: ${!!geojson})`);
+      } catch (e) {}
 
       loaded.push(suburb);
     }
@@ -284,30 +312,40 @@ const MelbourneSuburbsMap = () => {
   }, []);
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="w-full h-full">
-        <div className="bg-white shadow-lg h-full flex flex-col">
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+    <div className='w-full h-screen bg-gradient-to-br from-blue-50 to-indigo-100'>
+      <div className='w-full h-full'>
+        <div className='bg-white shadow-lg h-full flex flex-col'>
+          <div className='p-6 border-b border-gray-200'>
+            <h1 className='text-2xl sm:text-3xl font-bold text-gray-800 mb-2'>
               Melbourne Suburbs Map
             </h1>
             {loading && (
-              <div className="mt-2 text-sm text-blue-600 flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+              <div className='mt-2 text-sm text-blue-600 flex items-center'>
+                <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2'></div>
                 Loading suburb boundaries... ({loadedSuburbs.length}/
                 {melbourneSuburbs.length})
               </div>
             )}
           </div>
 
-          <div className={`flex-1 flex flex-col lg:flex-row ${isFullscreen ? 'fixed inset-0 z-[2000] bg-white' : ''}`} style={{ minHeight: isFullscreen ? '100vh' : undefined }}>
+          <div
+            className={`flex-1 flex flex-col lg:flex-row ${
+              isFullscreen ? "fixed inset-0 z-[2000] bg-white" : ""
+            }`}
+            style={{ minHeight: isFullscreen ? "100vh" : undefined }}
+          >
             {/* Map Area */}
-            <div className={`flex-1 relative ${isFullscreen ? 'h-screen' : 'h-full'}`} style={{ minHeight: isFullscreen ? '100vh' : '500px' }}>
+            <div
+              className={`flex-1 relative ${
+                isFullscreen ? "h-screen" : "h-full"
+              }`}
+              style={{ minHeight: isFullscreen ? "100vh" : "500px" }}
+            >
               <div
-                className="flex-1 relative w-full h-full min-h-[400px] md:min-h-[600px]"
+                className='flex-1 relative w-full h-full min-h-[400px] md:min-h-[600px]'
                 ref={mapContainerRef}
               >
-                <div className="absolute inset-0 w-full h-full" ref={mapRef} />
+                <div className='absolute inset-0 w-full h-full' ref={mapRef} />
                 <button
                   onClick={toggleFullscreen}
                   style={{
@@ -335,12 +373,14 @@ const MelbourneSuburbsMap = () => {
                 </button>
                 {/* Hover tooltip */}
                 {hoveredSuburb && (
-                  <div className="absolute top-2 left-12 bg-white p-3 rounded-lg shadow-lg border border-gray-200 z-[1000] max-w-xs">
-                    <h3 className="font-bold text-gray-800 text-sm">
+                  <div className='absolute top-2 left-12 bg-white p-3 rounded-lg shadow-lg border border-gray-200 z-[1000] max-w-xs'>
+                    <h3 className='font-bold text-gray-800 text-sm'>
                       {hoveredSuburb.name}
                     </h3>
-                    <div className="text-xs text-gray-600 space-y-1 mt-1">
-                      <p>Population: {formatNumber(hoveredSuburb.population)}</p>
+                    <div className='text-xs text-gray-600 space-y-1 mt-1'>
+                      <p>
+                        Population: {formatNumber(hoveredSuburb.population)}
+                      </p>
                       <p>Area: {hoveredSuburb.area} km²</p>
                       <p>
                         Density: {formatNumber(getDensity(hoveredSuburb))} /km²
@@ -357,48 +397,48 @@ const MelbourneSuburbsMap = () => {
               <div
                 className={`w-full lg:w-80 border-t lg:border-l lg:border-t-0 border-gray-200 bg-gray-50 transition-all duration-300 ease-in-out p-6 h-1/2 lg:h-auto overflow-y-auto`}
               >
-                <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                <h2 className='text-xl font-semibold mb-4 text-gray-800'>
                   Suburb Details
                 </h2>
 
                 {selectedSuburb ? (
-                  <div className="space-y-4">
-                    <div className="bg-white p-4 rounded-lg shadow-sm">
-                      <h3 className="text-lg font-bold text-gray-800 mb-3">
+                  <div className='space-y-4'>
+                    <div className='bg-white p-4 rounded-lg shadow-sm'>
+                      <h3 className='text-lg font-bold text-gray-800 mb-3'>
                         {selectedSuburb.name}
                       </h3>
 
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Population:</span>
-                          <span className="font-medium">
+                      <div className='space-y-3'>
+                        <div className='flex justify-between'>
+                          <span className='text-gray-600'>Population:</span>
+                          <span className='font-medium'>
                             {formatNumber(selectedSuburb.population)}
                           </span>
                         </div>
 
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Area:</span>
-                          <span className="font-medium">
+                        <div className='flex justify-between'>
+                          <span className='text-gray-600'>Area:</span>
+                          <span className='font-medium'>
                             {selectedSuburb.area} km²
                           </span>
                         </div>
 
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Density:</span>
-                          <span className="font-medium">
+                        <div className='flex justify-between'>
+                          <span className='text-gray-600'>Density:</span>
+                          <span className='font-medium'>
                             {formatNumber(getDensity(selectedSuburb))} /km²
                           </span>
                         </div>
 
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Postcode:</span>
-                          <span className="font-medium">
+                        <div className='flex justify-between'>
+                          <span className='text-gray-600'>Postcode:</span>
+                          <span className='font-medium'>
                             {selectedSuburb.postcode}
                           </span>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-200">
-                          <div className="text-xs text-gray-500">
+                        <div className='pt-3 border-t border-gray-200'>
+                          <div className='text-xs text-gray-500'>
                             <p>Coordinates:</p>
                             <p>
                               {selectedSuburb.lat.toFixed(4)},{" "}
@@ -409,11 +449,11 @@ const MelbourneSuburbsMap = () => {
                       </div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-lg shadow-sm">
-                      <h4 className="font-semibold text-gray-700 mb-2">
+                    <div className='bg-white p-4 rounded-lg shadow-sm'>
+                      <h4 className='font-semibold text-gray-700 mb-2'>
                         Population Rank
                       </h4>
-                      <p className="text-sm text-gray-600">
+                      <p className='text-sm text-gray-600'>
                         #
                         {melbourneSuburbs
                           .sort((a, b) => b.population - a.population)
@@ -424,27 +464,25 @@ const MelbourneSuburbsMap = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-gray-500 text-center py-8">
+                  <div className='text-gray-500 text-center py-8'>
                     <p>Click on a suburb to see details</p>
                   </div>
                 )}
               </div>
             )}
-      
-          
           </div>
 
-          <div className="border-t border-gray-200 p-4">
-              <div className="text-center text-sm text-gray-600">
-                <p>
-                  Powered by{" "}
-                  <a href="mailto:ruihua.niu@outlook.com" className="underline">
-                    Ruihua Niu
-                  </a>{" "}
-                  with ❤️
-                </p>
-              </div>
+          <div className='border-t border-gray-200 p-4'>
+            <div className='text-center text-sm text-gray-600'>
+              <p>
+                Powered by{" "}
+                <a href='mailto:ruihua.niu@outlook.com' className='underline'>
+                  Ruihua Niu
+                </a>{" "}
+                with ❤️
+              </p>
             </div>
+          </div>
         </div>
       </div>
     </div>
