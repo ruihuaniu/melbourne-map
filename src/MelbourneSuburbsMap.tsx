@@ -462,6 +462,20 @@ const MelbourneSuburbsMap = () => {
                         most populated suburb
                       </p>
                     </div>
+
+                    <div className='bg-white p-4 rounded-lg shadow-sm'>
+                      <h4 className='font-semibold text-gray-700 mb-2'>
+                        Density Rank
+                      </h4>
+                      <p className='text-sm text-gray-600'>
+                        #
+                        {melbourneSuburbs
+                          .sort((a, b) => getDensity(b) - getDensity(a))
+                          .findIndex((s) => s.name === selectedSuburb.name) +
+                          1}{" "}
+                        most dense suburb
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div className='text-gray-500 text-center py-8'>
